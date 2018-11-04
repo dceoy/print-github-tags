@@ -23,7 +23,7 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='print-github-tags'
-COMMAND_VERSION='v0.0.1'
+COMMAND_VERSION='v0.1.0'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 RELEASE=0
 LATEST=0
@@ -90,20 +90,16 @@ else
   KEY='name'
 fi
 
-CMD_0="curl -sS ${API_URL} | grep '\"${KEY}\":' | cut -d '\"' -f 4"
+CMD="curl -sS ${API_URL} | grep '\"${KEY}\":' | cut -d '\"' -f 4"
 
 if [[ ${LATEST} -eq 1 ]]; then
-  CMD_1=" | head -1"
-else
-  CMD_1=''
+  CMD="${CMD} | head -1"
 fi
 
 if [[ ${TAR} -eq 1 ]]; then
-  CMD_2=" | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.tar.gz'"
+  CMD="${CMD} | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.tar.gz'"
 elif [[ ${ZIP} -eq 1 ]]; then
-  CMD_2=" | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.zip'"
-else
-  CMD_2=''
+  CMD="${CMD} | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.zip'"
 fi
 
-bash -c "${CMD_0}${CMD_1}${CMD_2}"
+bash -c "${CMD}"
