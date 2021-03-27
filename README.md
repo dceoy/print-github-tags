@@ -9,9 +9,8 @@ Installation
 This command depends on curl.
 
 ```sh
-$ cd /path/to/bin   # a path in ${PATH}
-$ curl -SO https://raw.githubusercontent.com/dceoy/print-github-tags/master/print-github-tags
-$ chmod +x print-github-tags
+$ git clone https://github.com/dceoy/print-github-tags.git
+$ cp -a print-github-tags/print-github-tags /path/to/bin  # a path in ${PATH}
 ```
 
 Example
