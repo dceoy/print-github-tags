@@ -82,11 +82,12 @@ set -u
 
 [[ -z "${OWNER_REPO}" ]] && print_usage && exit 1
 
-if [[ ${RELEASE} -eq 1 ]] && [[ ${LATEST} -eq 1 ]]; then
-  API_URL="https://api.github.com/repos/${OWNER_REPO}/releases/latest"
-  KEY='tag_name'
-elif [[ ${RELEASE} -eq 1 ]]; then
-  API_URL="https://api.github.com/repos/${OWNER_REPO}/releases"
+if [[ ${RELEASE} -eq 1 ]]; then
+  if [[ ${LATEST} -eq 1 ]]; then
+    API_URL="https://api.github.com/repos/${OWNER_REPO}/releases/latest"
+  else
+    API_URL="https://api.github.com/repos/${OWNER_REPO}/releases"
+  fi
   KEY='tag_name'
 else
   API_URL="https://api.github.com/repos/${OWNER_REPO}/tags"
