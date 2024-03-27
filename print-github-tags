@@ -23,7 +23,7 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='print-github-tags'
-COMMAND_VERSION='v0.2.0'
+COMMAND_VERSION='v0.2.1'
 COMMAND_PATH=$(realpath "${0}")
 RELEASE=0
 LATEST=0
@@ -69,7 +69,7 @@ while [[ -n "${1}" ]]; do
     * )
       if [[ "${1:0:1}" = '-' ]]; then
         abort "invalid option \`${1}\`"
-      elif [[ -z "${OWNER_REPO}" ]] && [[ "${1}" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$ ]]; then
+      elif [[ -z "${OWNER_REPO}" ]] && [[ "${1}" =~ ^[^/]+/[^/]+$ ]]; then
         OWNER_REPO="${1}" && shift 1
       else
         print_usage && exit 1
