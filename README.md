@@ -3,6 +3,8 @@ print-github-tags
 
 Tiny command to fetch repository tags or releases from GitHub
 
+[![CI/CD](https://github.com/dceoy/print-github-tags/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/print-github-tags/actions/workflows/ci.yml)
+
 Installation
 ------------
 
