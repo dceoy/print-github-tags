@@ -1,12 +1,10 @@
-print-github-tags
-=================
+# print-github-tags
 
 Tiny command to fetch repository tags or releases from GitHub
 
 [![CI/CD](https://github.com/dceoy/print-github-tags/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/print-github-tags/actions/workflows/ci.yml)
 
-Installation
-------------
+## Installation
 
 This command depends on curl.
 
@@ -15,8 +13,7 @@ $ git clone https://github.com/dceoy/print-github-tags.git
 $ cp -a print-github-tags/print-github-tags /path/to/bin  # a path in ${PATH}
 ```
 
-Example
--------
+## Example
 
 Fetch the tags of [`curl/curl`](https://github.com/curl/curl) from GitHub.
 
@@ -42,8 +39,7 @@ Fetch the URL for the source code of the latest release.
 $ print-github-tags --release --latest --tar curl/curl
 ```
 
-Usage
------
+## Usage
 
 ```sh
 $ print-github-tags --help
