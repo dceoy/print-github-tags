@@ -8,6 +8,15 @@ setup() {
   export PATH="${TEST_BIN}:${PATH}"
 }
 
+expected_version_output() {
+  local command_name command_version
+
+  command_name="$(grep '^COMMAND_NAME=' "${SCRIPT}" | cut -d "'" -f 2)"
+  command_version="$(grep '^COMMAND_VERSION=' "${SCRIPT}" | cut -d "'" -f 2)"
+
+  printf '%s: %s\n' "${command_name}" "${command_version}"
+}
+
 mock_curl() {
   cat > "${TEST_BIN}/curl" <<'MOCK'
 #!/usr/bin/env bash
@@ -70,7 +79,7 @@ MOCK
   run "${SCRIPT}" --version
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = 'print-github-tags: v1.0.0' ]
+  [ "${output}" = "$(expected_version_output)" ]
 }
 
 @test "prints usage" {
