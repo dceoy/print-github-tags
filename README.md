@@ -6,7 +6,7 @@ Tiny command to fetch repository tags or releases from GitHub
 
 ## Installation
 
-This command depends on curl.
+This command depends on curl. It does not require jq or other non-standard JSON parsers.
 
 ```sh
 $ git clone https://github.com/dceoy/print-github-tags.git
@@ -39,6 +39,12 @@ Fetch the URL for the source code of the latest release.
 $ print-github-tags --release --latest --tar curl/curl
 ```
 
+## Notes
+
+- Tag and release list commands request up to 100 items from the GitHub API.
+- `--latest --release` uses GitHub's latest-release API.
+- `--latest` without `--release` prints the first tag returned by the GitHub tags API; it does not perform semantic-version sorting.
+
 ## Usage
 
 ```sh
@@ -54,7 +60,7 @@ Options:
   -h, --help        Print usage
   -v, --version     Print version information
   --release         Print only releases
-  --latest          Print a latest tag or release
+  --latest          Print the latest release, or the first tag returned by the GitHub API
   --tar             Print tar file URLs (.tar.gz)
   --zip             Print zip file URLs (.zip)
 
