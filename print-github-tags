@@ -1,22 +1,6 @@
 #!/usr/bin/env bash
 #
 # Tiny command to fetch repository tags or releases from GitHub
-#
-# Usage:
-#   print-github-tags -h|--help
-#   print-github-tags -v|--version
-#   print-github-tags [--release] [--latest] [--tar|--zip] <owner>/<repo>
-#
-# Options:
-#   -h, --help        Print usage
-#   -v, --version     Print version information
-#   --release         Print only releases
-#   --latest          Print the latest release, or the first tag returned by the GitHub API
-#   --tar             Print tar file URLs (.tar.gz)
-#   --zip             Print zip file URLs (.zip)
-#
-# Example:
-#   $ print-github-tags --release --latest --tar curl/curl
 
 set -Eeuo pipefail
 
