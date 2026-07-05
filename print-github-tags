@@ -11,40 +11,85 @@
 #   -h, --help        Print usage
 #   -v, --version     Print version information
 #   --release         Print only releases
-#   --latest          Print a latest tag or release
+#   --latest          Print the latest release, or the first tag returned by the GitHub API
 #   --tar             Print tar file URLs (.tar.gz)
 #   --zip             Print zip file URLs (.zip)
 #
 # Example:
 #   $ print-github-tags --release --latest --tar curl/curl
 
-set -e
+set -Eeuo pipefail
 
-[[ "${1}" = '--debug' ]] && set -x && shift 1
+[[ "${1:-}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='print-github-tags'
-COMMAND_VERSION='v0.2.1'
-COMMAND_PATH=$(realpath "${0}")
+COMMAND_VERSION='v0.2.2'
 RELEASE=0
 LATEST=0
 TAR=0
 ZIP=0
 OWNER_REPO=''
 
-function print_version {
+print_version() {
   echo "${COMMAND_NAME}: ${COMMAND_VERSION}"
 }
 
-function print_usage {
-  sed -ne '1,2d; /^#/!q; s/^#$/# /; s/^# //p;' "${COMMAND_PATH}"
+print_usage() {
+  cat <<'USAGE'
+Tiny command to fetch repository tags or releases from GitHub
+
+Usage:
+  print-github-tags -h|--help
+  print-github-tags -v|--version
+  print-github-tags [--release] [--latest] [--tar|--zip] <owner>/<repo>
+
+Options:
+  -h, --help        Print usage
+  -v, --version     Print version information
+  --release         Print only releases
+  --latest          Print the latest release, or the first tag returned by the GitHub API
+  --tar             Print tar file URLs (.tar.gz)
+  --zip             Print zip file URLs (.zip)
+
+Example:
+  $ print-github-tags --release --latest --tar curl/curl
+USAGE
 }
 
-function abort {
+abort() {
   echo "${COMMAND_NAME}: ${*}" >&2
   exit 1
 }
 
-while [[ -n "${1}" ]]; do
+is_valid_owner_repo() {
+  local owner_repo="${1}"
+  local owner repo
+
+  [[ "${owner_repo}" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$ ]] || return 1
+
+  owner="${owner_repo%%/*}"
+  repo="${owner_repo#*/}"
+
+  [[ "${owner}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$ ]] || return 1
+  [[ "${repo}" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+}
+
+print_items() {
+  local item
+
+  while IFS= read -r item; do
+    [[ -n "${item}" ]] || continue
+    if [[ ${TAR} -eq 1 ]]; then
+      printf 'https://github.com/%s/archive/%s.tar.gz\n' "${OWNER_REPO}" "${item}"
+    elif [[ ${ZIP} -eq 1 ]]; then
+      printf 'https://github.com/%s/archive/%s.zip\n' "${OWNER_REPO}" "${item}"
+    else
+      printf '%s\n' "${item}"
+    fi
+  done
+}
+
+while [[ $# -gt 0 ]]; do
   case "${1}" in
     '-v' | '--version' )
       print_version && exit 0
@@ -59,26 +104,26 @@ while [[ -n "${1}" ]]; do
       LATEST=1 && shift 1
       ;;
     '--tar' )
-      [[ ${ZIP} -ne 0 ]] && print_usage && exit 1
+      [[ ${ZIP} -ne 0 ]] && abort '--tar and --zip are mutually exclusive'
       TAR=1 && shift 1
       ;;
     '--zip' )
-      [[ ${TAR} -ne 0 ]] && print_usage && exit 1
+      [[ ${TAR} -ne 0 ]] && abort '--tar and --zip are mutually exclusive'
       ZIP=1 && shift 1
       ;;
     * )
       if [[ "${1:0:1}" = '-' ]]; then
         abort "invalid option \`${1}\`"
-      elif [[ -z "${OWNER_REPO}" ]] && [[ "${1}" =~ ^[^/]+/[^/]+$ ]]; then
+      elif [[ -n "${OWNER_REPO}" ]]; then
+        abort "unexpected argument \`${1}\`"
+      elif is_valid_owner_repo "${1}"; then
         OWNER_REPO="${1}" && shift 1
       else
-        print_usage && exit 1
+        abort "invalid repository format \`${1}\`; expected <owner>/<repo>"
       fi
       ;;
   esac
 done
-
-set -u
 
 [[ -z "${OWNER_REPO}" ]] && print_usage && exit 1
 
@@ -86,24 +131,19 @@ if [[ ${RELEASE} -eq 1 ]]; then
   if [[ ${LATEST} -eq 1 ]]; then
     API_URL="https://api.github.com/repos/${OWNER_REPO}/releases/latest"
   else
-    API_URL="https://api.github.com/repos/${OWNER_REPO}/releases"
+    API_URL="https://api.github.com/repos/${OWNER_REPO}/releases?per_page=100"
   fi
   KEY='tag_name'
 else
-  API_URL="https://api.github.com/repos/${OWNER_REPO}/tags"
+  API_URL="https://api.github.com/repos/${OWNER_REPO}/tags?per_page=100"
   KEY='name'
 fi
 
-CMD="curl -sS ${API_URL} | grep '\"${KEY}\":' | cut -d '\"' -f 4"
+RESPONSE=$(curl -fsSL "${API_URL}")
+ITEMS=$(printf '%s\n' "${RESPONSE}" | grep "\"${KEY}\":" | cut -d '"' -f 4 || true)
 
 if [[ ${LATEST} -eq 1 ]]; then
-  CMD="${CMD} | head -1"
+  ITEMS=$(printf '%s\n' "${ITEMS}" | head -n 1)
 fi
 
-if [[ ${TAR} -eq 1 ]]; then
-  CMD="${CMD} | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.tar.gz'"
-elif [[ ${ZIP} -eq 1 ]]; then
-  CMD="${CMD} | xargs -I {} echo 'https://github.com/${OWNER_REPO}/archive/{}.zip'"
-fi
-
-bash -c "${CMD}"
+printf '%s\n' "${ITEMS}" | print_items
