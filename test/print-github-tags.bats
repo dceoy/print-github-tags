@@ -70,7 +70,7 @@ MOCK
   run "${SCRIPT}" --version
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = 'print-github-tags: v0.2.2' ]
+  [ "${output}" = 'print-github-tags: v1.0.0' ]
 }
 
 @test "prints usage" {
