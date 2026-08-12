@@ -144,7 +144,22 @@ else
   KEY='name'
 fi
 
-RESPONSE=$(curl -fsSL "${API_URL}")
+if [[ -n "${COOLDOWN}" && ${LATEST} -eq 1 ]]; then
+  RESPONSE='[]'
+  PAGE=1
+  while :; do
+    PAGE_RESPONSE="$(curl -fsSL "https://api.github.com/repos/${OWNER_REPO}/releases?per_page=100&page=${PAGE}")"
+    PAGE_LENGTH="$(jq -e 'if type == "array" then length else error("expected a JSON array") end' <<<"${PAGE_RESPONSE}")"
+    RESPONSE="$(jq -s 'add' <(printf '%s\n' "${RESPONSE}") <(printf '%s\n' "${PAGE_RESPONSE}"))"
+    if (( PAGE_LENGTH < 100 )); then
+      break
+    fi
+    PAGE=$((PAGE + 1))
+  done
+else
+  RESPONSE=$(curl -fsSL "${API_URL}")
+fi
+
 if [[ -n "${COOLDOWN}" ]]; then
   if [[ ${LATEST} -eq 1 ]]; then
     ITEMS=$(printf '%s\n' "${RESPONSE}" | jq --argjson cutoff "${CUTOFF_EPOCH}" -r '

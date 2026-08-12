@@ -47,8 +47,9 @@ $ print-github-tags --release --cooldown 1w curl/curl
 
 ## Notes
 
-- Tag and release list commands request up to 100 items from the GitHub API.
+- Tag and ordinary release list commands request up to 100 items from the GitHub API.
 - `--latest --release` uses GitHub's latest-release API.
+- `--release --latest --cooldown` walks all release-list pages before applying cooldown filtering.
 - `--latest` without `--release` prints the first tag returned by the GitHub tags API; it does not perform semantic-version sorting.
 - `--cooldown <duration>` requires `--release` and accepts a positive integer followed by `h` (hours), `d` (days), or `w` (weeks).
 - Cooldown filtering uses `published_at` and includes releases published at or before the cutoff. Releases with no `published_at` are excluded.
@@ -64,7 +65,7 @@ Tiny command to fetch repository tags or releases from GitHub
 Usage:
   print-github-tags -h|--help
   print-github-tags -v|--version
-  print-github-tags [--release] [--latest] [--tar|--zip] <owner>/<repo>
+  print-github-tags [--release] [--latest] [--cooldown <duration>] [--tar|--zip] <owner>/<repo>
 
 Options:
   -h, --help        Print usage
