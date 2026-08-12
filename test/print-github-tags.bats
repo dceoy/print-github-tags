@@ -243,6 +243,13 @@ MOCK
   done
 }
 
+@test "rejects cooldown durations that overflow epoch arithmetic" {
+  run "${SCRIPT}" --release --cooldown 15250284452472w curl/curl
+
+  [ "${status}" -eq 1 ]
+  [[ "${output}" == *'cooldown duration is too large'* ]]
+}
+
 @test "rejects missing cooldown duration" {
   run "${SCRIPT}" --release --cooldown
 

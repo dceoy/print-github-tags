@@ -60,6 +60,17 @@ is_valid_owner_repo() {
   [[ "${repo}" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
 }
 
+is_decimal_greater_than() {
+  local value="${1}"
+  local limit="${2}"
+
+  if (( ${#value} != ${#limit} )); then
+    (( ${#value} > ${#limit} ))
+  else
+    [[ "${value}" > "${limit}" ]]
+  fi
+}
+
 print_items() {
   local item
 
@@ -123,10 +134,21 @@ if [[ -n "${COOLDOWN}" ]]; then
   cooldown_value="${COOLDOWN%?}"
   cooldown_unit="${COOLDOWN: -1}"
   case "${cooldown_unit}" in
-    h ) COOLDOWN_SECONDS=$((10#${cooldown_value} * 3600)) ;;
-    d ) COOLDOWN_SECONDS=$((10#${cooldown_value} * 86400)) ;;
-    w ) COOLDOWN_SECONDS=$((10#${cooldown_value} * 604800)) ;;
+    h )
+      cooldown_limit='2562047788015215'
+      cooldown_multiplier=3600
+      ;;
+    d )
+      cooldown_limit='106751991167300'
+      cooldown_multiplier=86400
+      ;;
+    w )
+      cooldown_limit='15250284452471'
+      cooldown_multiplier=604800
+      ;;
   esac
+  is_decimal_greater_than "${cooldown_value}" "${cooldown_limit}" && abort 'cooldown duration is too large'
+  COOLDOWN_SECONDS=$((10#${cooldown_value} * cooldown_multiplier))
   command -v jq >/dev/null 2>&1 || abort '--cooldown requires jq'
   NOW_EPOCH="$(date -u +%s)"
   CUTOFF_EPOCH=$((NOW_EPOCH - COOLDOWN_SECONDS))
