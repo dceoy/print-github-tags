@@ -152,8 +152,9 @@ if [[ -n "${COOLDOWN}" ]]; then
         .[]
         | select(.published_at != null)
         | select((.published_at | fromdateiso8601) <= $cutoff)
+        | select(.draft == false and .prerelease == false)
       ]
-      | if length == 0 then empty else max_by(.published_at | fromdateiso8601) | .tag_name end
+      | if length == 0 then empty else max_by(.created_at | fromdateiso8601) | .tag_name end
     ')
   else
     ITEMS=$(printf '%s\n' "${RESPONSE}" | jq --argjson cutoff "${CUTOFF_EPOCH}" -r '

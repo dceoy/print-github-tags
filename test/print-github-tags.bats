@@ -65,22 +65,50 @@ JSON
   {
     "tag_name": "curl-8_13_0",
     "name": "curl 8.13.0",
-    "published_at": "2025-08-05T00:00:00Z"
+    "published_at": "2025-08-05T00:00:00Z",
+    "created_at": "2025-08-10T00:00:00Z",
+    "draft": false,
+    "prerelease": false
   },
   {
     "tag_name": "curl-8_14_0",
     "name": "curl 8.14.0",
-    "published_at": "2025-08-11T00:00:00Z"
+    "published_at": "2025-08-11T00:00:00Z",
+    "created_at": "2025-08-09T00:00:00Z",
+    "draft": false,
+    "prerelease": false
+  },
+  {
+    "tag_name": "curl-8_14_rc1",
+    "name": "curl 8.14.1 RC1",
+    "published_at": "2025-08-10T00:00:00Z",
+    "created_at": "2025-08-12T00:00:00Z",
+    "draft": false,
+    "prerelease": true
+  },
+  {
+    "tag_name": "curl-8_14_draft",
+    "name": "curl 8.14.1 draft",
+    "published_at": "2025-08-09T00:00:00Z",
+    "created_at": "2025-08-13T00:00:00Z",
+    "draft": true,
+    "prerelease": false
   },
   {
     "tag_name": "curl-8_14_1",
     "name": "curl 8.14.1",
-    "published_at": "2025-08-11T00:00:01Z"
+    "published_at": "2025-08-11T00:00:01Z",
+    "created_at": "2025-08-14T00:00:00Z",
+    "draft": false,
+    "prerelease": false
   },
   {
     "tag_name": "curl-8_12_0",
     "name": "curl 8.12.0",
-    "published_at": null
+    "published_at": null,
+    "created_at": "2025-08-04T00:00:00Z",
+    "draft": false,
+    "prerelease": false
   }
 ]
 JSON
@@ -177,7 +205,7 @@ MOCK
   run "${SCRIPT}" --release curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0\ncurl-8_14_1\ncurl-8_12_0' ]
+  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0\ncurl-8_14_rc1\ncurl-8_14_draft\ncurl-8_14_1\ncurl-8_12_0' ]
 }
 
 @test "filters releases by an inclusive cooldown cutoff" {
@@ -187,7 +215,7 @@ MOCK
   run "${SCRIPT}" --cooldown 1d --release curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0' ]
+  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0\ncurl-8_14_rc1\ncurl-8_14_draft' ]
 }
 
 @test "selects the newest eligible release with latest cooldown" {
@@ -197,7 +225,7 @@ MOCK
   run "${SCRIPT}" --release --latest --cooldown 1d curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = 'curl-8_14_0' ]
+  [ "${output}" = 'curl-8_13_0' ]
 }
 
 @test "prints no output when no release meets the cooldown" {
@@ -217,12 +245,12 @@ MOCK
   run "${SCRIPT}" --release --cooldown 1d --tar curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = $'https://github.com/curl/curl/archive/curl-8_13_0.tar.gz\nhttps://github.com/curl/curl/archive/curl-8_14_0.tar.gz' ]
+  [ "${output}" = $'https://github.com/curl/curl/archive/curl-8_13_0.tar.gz\nhttps://github.com/curl/curl/archive/curl-8_14_0.tar.gz\nhttps://github.com/curl/curl/archive/curl-8_14_rc1.tar.gz\nhttps://github.com/curl/curl/archive/curl-8_14_draft.tar.gz' ]
 
   run "${SCRIPT}" --release --cooldown 1d --zip curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = $'https://github.com/curl/curl/archive/curl-8_13_0.zip\nhttps://github.com/curl/curl/archive/curl-8_14_0.zip' ]
+  [ "${output}" = $'https://github.com/curl/curl/archive/curl-8_13_0.zip\nhttps://github.com/curl/curl/archive/curl-8_14_0.zip\nhttps://github.com/curl/curl/archive/curl-8_14_rc1.zip\nhttps://github.com/curl/curl/archive/curl-8_14_draft.zip' ]
 }
 
 @test "requires jq only for cooldown" {
@@ -238,7 +266,7 @@ MOCK
   PATH="${TEST_BIN}:${jq_path%/*}" run "${SCRIPT}" --release curl/curl
 
   [ "${status}" -eq 0 ]
-  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0\ncurl-8_14_1\ncurl-8_12_0' ]
+  [ "${output}" = $'curl-8_13_0\ncurl-8_14_0\ncurl-8_14_rc1\ncurl-8_14_draft\ncurl-8_14_1\ncurl-8_12_0' ]
 }
 
 @test "prints archive URL for the first tag returned by the tags API" {

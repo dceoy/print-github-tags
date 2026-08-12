@@ -52,7 +52,7 @@ $ print-github-tags --release --cooldown 1w curl/curl
 - `--latest` without `--release` prints the first tag returned by the GitHub tags API; it does not perform semantic-version sorting.
 - `--cooldown <duration>` requires `--release` and accepts a positive integer followed by `h` (hours), `d` (days), or `w` (weeks).
 - Cooldown filtering uses `published_at` and includes releases published at or before the cutoff. Releases with no `published_at` are excluded.
-- `--release --latest --cooldown` uses the release-list API and selects the newest eligible release; no eligible releases produce no output and a successful exit.
+- `--release --latest --cooldown` uses the release-list API, filters eligibility by `published_at`, then excludes drafts and prereleases and selects the full release with the newest `created_at`; no eligible releases produce no output and a successful exit.
 - `--tar` and `--zip` format the releases after cooldown filtering.
 
 ## Usage
