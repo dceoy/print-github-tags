@@ -12,6 +12,7 @@ RELEASE=0
 LATEST=0
 TAR=0
 ZIP=0
+COOLDOWN=''
 OWNER_REPO=''
 
 print_version() {
@@ -25,13 +26,14 @@ Tiny command to fetch repository tags or releases from GitHub
 Usage:
   print-github-tags -h|--help
   print-github-tags -v|--version
-  print-github-tags [--release] [--latest] [--tar|--zip] <owner>/<repo>
+  print-github-tags [--release] [--latest] [--cooldown <duration>] [--tar|--zip] <owner>/<repo>
 
 Options:
   -h, --help        Print usage
   -v, --version     Print version information
   --release         Print only releases
   --latest          Print the latest release, or the first tag returned by the GitHub API
+  --cooldown        Exclude releases published within the given Nh, Nd, or Nw cooldown
   --tar             Print tar file URLs (.tar.gz)
   --zip             Print zip file URLs (.zip)
 
@@ -56,6 +58,17 @@ is_valid_owner_repo() {
 
   [[ "${owner}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$ ]] || return 1
   [[ "${repo}" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+}
+
+is_decimal_greater_than() {
+  local value="${1}"
+  local limit="${2}"
+
+  if (( ${#value} != ${#limit} )); then
+    (( ${#value} > ${#limit} ))
+  else
+    [[ "${value}" > "${limit}" ]]
+  fi
 }
 
 print_items() {
@@ -87,6 +100,10 @@ while [[ $# -gt 0 ]]; do
     '--latest' )
       LATEST=1 && shift 1
       ;;
+    '--cooldown' )
+      [[ $# -ge 2 ]] || abort '--cooldown requires a duration'
+      COOLDOWN="${2}" && shift 2
+      ;;
     '--tar' )
       [[ ${ZIP} -ne 0 ]] && abort '--tar and --zip are mutually exclusive'
       TAR=1 && shift 1
@@ -111,8 +128,34 @@ done
 
 [[ -z "${OWNER_REPO}" ]] && print_usage && exit 1
 
+if [[ -n "${COOLDOWN}" ]]; then
+  [[ ${RELEASE} -eq 1 ]] || abort '--cooldown requires --release'
+  [[ "${COOLDOWN}" =~ ^[1-9][0-9]*[hdw]$ ]] || abort "invalid cooldown duration \`${COOLDOWN}\`; expected <positive integer>[h|d|w]"
+  cooldown_value="${COOLDOWN%?}"
+  cooldown_unit="${COOLDOWN: -1}"
+  case "${cooldown_unit}" in
+    h )
+      cooldown_limit='2562047788015215'
+      cooldown_multiplier=3600
+      ;;
+    d )
+      cooldown_limit='106751991167300'
+      cooldown_multiplier=86400
+      ;;
+    w )
+      cooldown_limit='15250284452471'
+      cooldown_multiplier=604800
+      ;;
+  esac
+  is_decimal_greater_than "${cooldown_value}" "${cooldown_limit}" && abort 'cooldown duration is too large'
+  COOLDOWN_SECONDS=$((10#${cooldown_value} * cooldown_multiplier))
+  command -v jq >/dev/null 2>&1 || abort '--cooldown requires jq'
+  NOW_EPOCH="$(date -u +%s)"
+  CUTOFF_EPOCH=$((NOW_EPOCH - COOLDOWN_SECONDS))
+fi
+
 if [[ ${RELEASE} -eq 1 ]]; then
-  if [[ ${LATEST} -eq 1 ]]; then
+  if [[ ${LATEST} -eq 1 && -z "${COOLDOWN}" ]]; then
     API_URL="https://api.github.com/repos/${OWNER_REPO}/releases/latest"
   else
     API_URL="https://api.github.com/repos/${OWNER_REPO}/releases?per_page=100"
@@ -123,11 +166,47 @@ else
   KEY='name'
 fi
 
-RESPONSE=$(curl -fsSL "${API_URL}")
-ITEMS=$(printf '%s\n' "${RESPONSE}" | grep "\"${KEY}\":" | cut -d '"' -f 4 || true)
+if [[ -n "${COOLDOWN}" && ${LATEST} -eq 1 ]]; then
+  RESPONSE='[]'
+  PAGE=1
+  while :; do
+    PAGE_RESPONSE="$(curl -fsSL "https://api.github.com/repos/${OWNER_REPO}/releases?per_page=100&page=${PAGE}")"
+    PAGE_LENGTH="$(jq -e 'if type == "array" then length else error("expected a JSON array") end' <<<"${PAGE_RESPONSE}")"
+    RESPONSE="$(jq -s 'add' <(printf '%s\n' "${RESPONSE}") <(printf '%s\n' "${PAGE_RESPONSE}"))"
+    if (( PAGE_LENGTH < 100 )); then
+      break
+    fi
+    PAGE=$((PAGE + 1))
+  done
+else
+  RESPONSE=$(curl -fsSL "${API_URL}")
+fi
 
-if [[ ${LATEST} -eq 1 ]]; then
-  ITEMS=$(printf '%s\n' "${ITEMS}" | head -n 1)
+if [[ -n "${COOLDOWN}" ]]; then
+  if [[ ${LATEST} -eq 1 ]]; then
+    ITEMS=$(printf '%s\n' "${RESPONSE}" | jq --argjson cutoff "${CUTOFF_EPOCH}" -r '
+      [
+        .[]
+        | select(.published_at != null)
+        | select((.published_at | fromdateiso8601) <= $cutoff)
+        | select(.draft == false and .prerelease == false)
+      ]
+      | if length == 0 then empty else max_by(.created_at | fromdateiso8601) | .tag_name end
+    ')
+  else
+    ITEMS=$(printf '%s\n' "${RESPONSE}" | jq --argjson cutoff "${CUTOFF_EPOCH}" -r '
+      .[]
+      | select(.published_at != null)
+      | select((.published_at | fromdateiso8601) <= $cutoff)
+      | .tag_name
+    ')
+  fi
+else
+  ITEMS=$(printf '%s\n' "${RESPONSE}" | grep "\"${KEY}\":" | cut -d '"' -f 4 || true)
+
+  if [[ ${LATEST} -eq 1 ]]; then
+    ITEMS=$(printf '%s\n' "${ITEMS}" | head -n 1)
+  fi
 fi
 
 printf '%s\n' "${ITEMS}" | print_items

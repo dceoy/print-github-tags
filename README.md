@@ -6,7 +6,7 @@ Tiny command to fetch repository tags or releases from GitHub
 
 ## Installation
 
-This command depends on curl. It does not require jq or other non-standard JSON parsers.
+This command depends on curl. jq is additionally required only when using `--cooldown`.
 
 ```sh
 $ git clone https://github.com/dceoy/print-github-tags.git
@@ -39,11 +39,22 @@ Fetch the URL for the source code of the latest release.
 $ print-github-tags --release --latest --tar curl/curl
 ```
 
+Fetch releases older than a one-week cooldown.
+
+```sh
+$ print-github-tags --release --cooldown 1w curl/curl
+```
+
 ## Notes
 
-- Tag and release list commands request up to 100 items from the GitHub API.
+- Tag and ordinary release list commands request up to 100 items from the GitHub API.
 - `--latest --release` uses GitHub's latest-release API.
+- `--release --latest --cooldown` walks all release-list pages before applying cooldown filtering.
 - `--latest` without `--release` prints the first tag returned by the GitHub tags API; it does not perform semantic-version sorting.
+- `--cooldown <duration>` requires `--release` and accepts a positive integer followed by `h` (hours), `d` (days), or `w` (weeks).
+- Cooldown filtering uses `published_at` and includes releases published at or before the cutoff. Releases with no `published_at` are excluded.
+- `--release --latest --cooldown` uses the release-list API, filters eligibility by `published_at`, then excludes drafts and prereleases and selects the full release with the newest `created_at`; no eligible releases produce no output and a successful exit.
+- `--tar` and `--zip` format the releases after cooldown filtering.
 
 ## Usage
 
@@ -54,13 +65,14 @@ Tiny command to fetch repository tags or releases from GitHub
 Usage:
   print-github-tags -h|--help
   print-github-tags -v|--version
-  print-github-tags [--release] [--latest] [--tar|--zip] <owner>/<repo>
+  print-github-tags [--release] [--latest] [--cooldown <duration>] [--tar|--zip] <owner>/<repo>
 
 Options:
   -h, --help        Print usage
   -v, --version     Print version information
   --release         Print only releases
   --latest          Print the latest release, or the first tag returned by the GitHub API
+  --cooldown        Exclude releases published within the given Nh, Nd, or Nw cooldown
   --tar             Print tar file URLs (.tar.gz)
   --zip             Print zip file URLs (.zip)
 
