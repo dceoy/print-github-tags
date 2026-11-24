@@ -14,7 +14,7 @@ jobs:
   shell-lint:
     permissions:
       contents: read
-    uses: dceoy/gha-for-devops/.github/workflows/shell-lint.yml@2a8aaab7fcc91494813c33293345e000244a0d90  # v2.3.1
+    uses: dceoy/gha-for-devops/.github/workflows/shell-lint.yml@b7d9e0c64d9cd6d7198da715b11a4648373e9a23  # v2.3.4
     with:
       search-path: .
       file-names: print-github-*
@@ -27,7 +27,7 @@ jobs:
       actions: read
       checks: read
       statuses: read
-    uses: dceoy/gha-for-devops/.github/workflows/dependabot-auto-merge.yml@2a8aaab7fcc91494813c33293345e000244a0d90  # v2.3.1
+    uses: dceoy/gha-for-devops/.github/workflows/dependabot-auto-merge.yml@b7d9e0c64d9cd6d7198da715b11a4648373e9a23  # v2.3.4
     with:
       unconditional: true
     secrets:
